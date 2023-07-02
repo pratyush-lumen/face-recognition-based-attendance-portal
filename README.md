@@ -48,10 +48,9 @@ python app.py
 
 Note: Make sure you have a webcam connected to your computer for real-time face recognition.
 
-# Authors
 # Hi, I'm bipsblip! 👋
 
-- Pratyush Chand:  [@bipsblip](https://github.com/bipsblip)
+Author - Pratyush Chand:  [@bipsblip](https://github.com/bipsblip)
 
 Please feel free to contribute to this project by submitting bug reports, feature requests, or pull requests.
 
