@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include "head.html" %}
+</head>
+<body >
+
+{% include "navbar.html" %}
+
+<div class="container-fluid">
+    <div class="row mt-5 mb-5">
+        <div class="col-md-8">
+            <img src="{{ url_for('video_feed') }}" width="100%" class="img-thumbnail">
+        </div>
+        <div class="col-md-4" style="height:500px; overflow-y:auto;">
+            <h3>Latest Records</h3>
+            <table class="table" >
+                <thead>
+                    <tr>
+                        <th>Roll</th>
+                        <th>Name</th>
+                        <th>Dept</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>                
+                <tbody id="scandata">
+
+                </tbody>
+            </table>
+            <button id="downloadButton">Download</button>
+            <button id="clearButton">Clear</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script> <!-- Add this line for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script> <!-- Add this line for FileSaver.js library -->
+<script type="text/javascript">
+    $(document).ready(function() {
+        let lastcnt = 0;
+        let cnt;
+        chkNewScan();
+
+        function chkNewScan() {
+            countTodayScan();
+            setTimeout(chkNewScan, 1000);
+        }
+
+        function countTodayScan() {
+            $.ajax({
+                url: '/countTodayScan',
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    cnt = data.rowcount;
+                    if (cnt > lastcnt) {
+                        reloadTable();
+                    }
+
+                    lastcnt = cnt;
+                },
+                error: function(result){
+                    console.log('no result!')
+                }
+            })
+        }
+
+        function reloadTable() {
+            $.ajax({
+                url: '/loadData',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response){
+                    var tr = $("#scandata");
+                    tr.empty();
+
+                    $.each(response, function(index, item) {
+                         if (item.length > 0) {
+                            for (let i = 0; i < item.length; i++) {
+                              tr.append('<tr>'+
+                            '<td>'+item[i][1]+'</td>'+
+                            '<td>'+item[i][2]+'</td>'+
+                            '<td>'+item[i][3]+'</td>'+
+                            '<td>'+item[i][4]+'</td>'+
+                            '<td>'+item[i][5]+'</td>'+ // Add this line for entry/exit status
+                       '</tr>');
+                            }
+                         }
+                    });
+
+                },
+                error: function(result){
+                    console.log('no result!')
+                }
+            });
+        }
+        
+        // Add event listener for download button
+        $('#downloadButton').click(function() {
+            exportTableToExcel();
+        });
+        
+        // Add event listener for clear button
+        $('#clearButton').click(function() {
+            clearAttendance();
+        });
+        
+        function exportTableToExcel() {
+            const table = document.getElementById('scandata');
+            const wb = XLSX.utils.table_to_book(table, { sheet: 'Sheet JS' });
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+            
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const dateString = year + month + day;
+            
+            saveAs(new Blob([s2ab(wbout)], { type: 'application/octet-stream' }), dateString + '.xlsx');
+        }
+        
+        function clearAttendance() {
+    // Clear the table
+    $("#scandata").empty();
+    
+    // Make a POST request to clearAttendance route
+    $.ajax({
+        url: '/clearAttendance',
+        type: 'POST',
+        success: function(response) {
+            console.log(response); // Optional: Log the response from the server
+        },
+        error: function(error) {
+            console.log(error); // Optional: Log any errors that occur during the request
+        }
+    });
+}
+
+        
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+            return buf;
+        }
+    });
+</script>
+
+</body>
+</html>
